@@ -38,7 +38,7 @@ app.use(cors());
 const authenticate = (req: Request, res: Response, next: () => void) => {
   const token = req.headers.authorization;
 
-  if (token === TOKEN) {
+  if (token === `Bearer ${TOKEN}`) {
     next();
   } else {
     res.status(401).json({ error: "Autenticação falhou" });
@@ -104,8 +104,10 @@ app.get("/tasks", authenticate, async (req: Request, res: Response) => {
 
     res.status(200).json({
       totalTasks: tasks.length,
-      currentPage: parseInt(page.toString()),
-      totalPages: Math.ceil(tasks.length / Number(limit)),
+      pagination: {
+        currentPage: parseInt(page.toString()),
+        totalPages: Math.ceil(tasks.length / Number(limit)),
+      },
       tasks: paginatedTasks,
     });
   } catch (error) {
