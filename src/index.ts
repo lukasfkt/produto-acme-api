@@ -81,11 +81,33 @@ app.post("/tasks", authenticate, async (req: Request, res: Response) => {
   }
 });
 
-// Lista todas as tarefas
-app.get("/tasks", authenticate, (req: Request, res: Response) => {
+// Lista todas as tarefas e filtra por paginacão ou pesquisa
+app.get("/tasks", authenticate, async (req: Request, res: Response) => {
   try {
-    const tasks = tasksDB.getData("/tasks");
-    res.status(200).json(tasks);
+    // Parâmetros de consulta
+    const { page = 1, limit = 10, search } = req.query;
+
+    // Obtém todas as tarefas
+    let tasks: Task[] = await tasksDB.getData("/tasks");
+
+    // Filtra por título, se fornecido
+    if (search) {
+      tasks = tasks.filter((task: Task) =>
+        task.title.toLowerCase().includes(search.toString().toLowerCase())
+      );
+    }
+
+    // Aplica paginação
+    const startIndex = (Number(page) - 1) * Number(limit);
+    const endIndex = Number(page) * Number(limit);
+    const paginatedTasks = tasks.slice(startIndex, endIndex);
+
+    res.status(200).json({
+      totalTasks: tasks.length,
+      currentPage: parseInt(page.toString()),
+      totalPages: Math.ceil(tasks.length / Number(limit)),
+      tasks: paginatedTasks,
+    });
   } catch (error) {
     console.log(error);
     res.status(500).json({ error: "Erro ao recuperar tarefas" });
