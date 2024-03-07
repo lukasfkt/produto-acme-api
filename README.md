@@ -1,4 +1,4 @@
-# API de Tarefas
+# Product ACME - API
 
 Esta é uma API simples de tarefas desenvolvida em Node.js e TypeScript. Ela utiliza o `express` como servidor web e o `node-json-db` para armazenamento dos dados.
 
