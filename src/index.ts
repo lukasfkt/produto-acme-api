@@ -12,7 +12,6 @@ type Task = {
   title: string;
   description: string;
   completed: boolean;
-  createdAt: string;
   updatedAt: string;
 };
 
@@ -61,19 +60,20 @@ app.post("/login", (req: Request, res: Response) => {
 
 // Adiciona uma nova tarefa
 app.post("/tasks", authenticate, async (req: Request, res: Response) => {
+  const { title, description, completed } = req.body;
+
   try {
     const nowDt = new Date().toLocaleTimeString("pt-br", {
       timeZone: "America/Sao_Paulo",
     });
     const newTask: Task = {
       uuid: uuidv4(),
-      title: req.body.title,
-      description: req.body.description,
-      completed: false,
-      createdAt: nowDt,
+      title,
+      description,
+      completed,
       updatedAt: nowDt,
     };
-    await tasksDB.push("/tasks", newTask, true);
+    await tasksDB.push("/tasks[]", newTask);
     res.status(201).json({ success: true, task: newTask });
   } catch (error) {
     console.log(error);
@@ -125,13 +125,15 @@ app.put("/tasks/:id", authenticate, async (req: Request, res: Response) => {
     const nowDt = new Date().toLocaleTimeString("pt-br", {
       timeZone: "America/Sao_Paulo",
     });
-    const task: Task = await tasksDB.getData(`/tasks[${taskId}]`);
+    const tasks: Task[] = await tasksDB.getData("/tasks");
+    const index = tasks.findIndex((task: Task) => task.uuid === taskId);
+    const task = tasks[index];
     if (task) {
       task.title = title;
       task.description = description;
       task.completed = completed;
       task.updatedAt = nowDt;
-      await tasksDB.push(`/tasks[${taskId}]`, task, true);
+      await tasksDB.push(`/tasks[${index}]`, task, true);
       res.status(204).json({ success: true, task });
     }
     res.status(404).json({ error: "Tarefa não encontrada" });
@@ -141,11 +143,13 @@ app.put("/tasks/:id", authenticate, async (req: Request, res: Response) => {
 });
 
 // Deleta uma tarefa pelo ID
-app.delete("/tasks/:id", authenticate, (req: Request, res: Response) => {
+app.delete("/tasks/:id", authenticate, async (req: Request, res: Response) => {
   const taskId = req.params.id;
 
   try {
-    tasksDB.delete(`/tasks[${taskId}]`);
+    const tasks: Task[] = await tasksDB.getData("/tasks");
+    const index = tasks.findIndex((task: Task) => task.uuid === taskId);
+    tasksDB.delete(`/tasks[${index}]`);
     res.status(204).json({ success: true });
   } catch (error) {
     res.status(500).json({ error: "Erro ao deletar a tarefa" });
